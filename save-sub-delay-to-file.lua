@@ -9,22 +9,21 @@ retiming_window.__index = retiming_window
 function retiming_window:new()
     local options
     options = {
-        -- sub_tools_path = [["C:\<path>\sub-tools.exe"]],
-        sub_tools_path = [[C:\Coding\.extract\sub-tools.exe]],
+        sub_tools_path = [[C:\<path>\sub-tools.exe]], --SETUP: replace with path to sub-tools (https://github.com/Rapptz/sub-tools)
         save_to_new_file = true, --If true, outputted sub file is named according to rename_filename applied to the name of the currently playing video
         rename_filename = {"(.*)", "%1.ja", 1}, --string.gsub() params: provide a pattern, replacement string, and limit for number of substitutions
             --read https://www.lua.org/manual/5.3/manual.html#6.4.1 for pattern-matching
         keybinds = {
             {'1', 'set-start-time', function() options:set_sub_start() end, {}},
             {'2', 'set-end-time', function() options:set_sub_end() end, {}},
-            {'!', 'earliest-start-time', function() options:set_start("-∞") end, {}},
-            {'@', 'latest-end-time', function() options:set_end("∞") end, {}},
             {'m', 'cycle-modes', function() options:cycle_mode() end, {}},
             {'s', 'toggle-save-new-file', function() options:toggle_new_file() end, {}},
+            {'!', 'earliest-start-time', function() options:set_start("-∞") end, {}},
+            {'@', 'latest-end-time', function() options:set_end("∞") end, {}},
             {'r', 'retime', function() options:retime() end, {}},
             {'ESC', 'escape', function() options:unbind() end, {}},
         },
-        padding_x = 10,
+        padding_x = 20,
         padding_y = 30,
     }
     retiming_window.displayed = false
@@ -43,8 +42,21 @@ local mode_map = {{"retime", "Shift by sub delay"}, {"remove", "Remove selected 
 local function showMessage(message, persist)
     local ass_start = mp.get_property_osd('osd-ass-cc/0')
     local ass_stop = mp.get_property_osd('osd-ass-cc/1')
-    mp.osd_message(ass_start..'{\\fs12}'..tostring(message)..ass_stop, persist or 2);
-  end
+    local fontsize = '' --{\\fs12}
+    mp.osd_message(ass_start..fontsize..tostring(message)..ass_stop, persist or 2.5);
+end
+
+local function testMessage(t)
+    local message = ""
+    if type(t) == "table" then
+        for _,v in pairs(t) do
+            message = message..v.."\\N"
+        end
+    else
+        message = tostring(t)
+    end
+    showMessage(message, 20)
+end
 
 local function format_duration_HHMMSSssss(duration)
     if duration == nil then return "00:00" end
@@ -98,20 +110,20 @@ function retiming_window:handle_file_names()
         return
     end
     if self.save_to_new_file then
-        local video_file = path(mp.get_property('path'))
+        local video_file = path(mp.get_property('path')) --should this be stream-open-filename?
         local new_name = video_file["name"]
         local r = self.rename_filename
         new_name = string.gsub(new_name, r[1], r[2], r[3])
         local orig = path(self.orig_file_path)
         self.target_file_path = orig['dir']..new_name.."."..orig['ext']
     else
-        self.target_file_path = self.current_file_path
+        self.target_file_path = self.orig_file_path
     end
 
 
 end
 
-function retiming_window:after_call()
+function retiming_window:after_call(result)
     local message = ""
     if file_exists(self.target_file_path) then
         os.remove(self.target_file_path)
@@ -149,11 +161,19 @@ function retiming_window:retime()
         showMessage("✘Track must be .srt ("..track_codec..")")
         return
     end
+    local delay = mp.get_property_native("sub-delay")
+    if delay == 0 then
+        self:unbind()
+        showMessage("✘Delay is 0")
+        return
+    end
+
 
     self:handle_file_names()
 
     self.drop_index = mp.get_property_number("current-tracks/sub/id")
-    local delay = mp.get_property_native("sub-delay")
+
+
 
     local args = {
         self.sub_tools_path,
@@ -173,25 +193,20 @@ function retiming_window:retime()
         name = "subprocess",
         playback_only = false,
         args = args,
+        capture_stdout = true,
     }, function(success, result, error)
         if success then
-            self:after_call()
+            -- self:after_call(result)
         else
-            showMessage("✘Failed to run sub-tools\\N")
+            showMessage("✘Failed to run sub-tools\\N"..error)
         end
     end
     )
 
     self:unbind()
-    -- showMessage("Retiming...")
+    testMessage(args)
+    showMessage("Retiming...")
 
-    -- local message = ""
-    -- local temp = {self.orig_file_path, self.current_file_path, self.target_file_path}
-    -- for _,v in pairs(temp) do
-    --     message = message..v.."\\N"
-    -- end
-    -- showMessage(message, true)
-    -- self:after_call()
 end
 
 function retiming_window:set_sub_start()
@@ -279,18 +294,19 @@ function retiming_window:draw()
     et = type(et) == 'number' and format_duration_ms(et) or et
 
     local add = function(key, text)
-        return bold(key)..text.."\\N"
+        return bold(key..':').." "..text.."\\N"
     end
 
-    ass:append(add('1:', " set start time "..paren(st)))
-    ass:append(add('2:', " set end time "..paren(et)))
-    ass:append(add('m:', " cycle mode"))
-    ass:append(add('s:', " toggle save to new file "..paren(yesno(self.save_to_new_file))))
-    ass:append(add('Shift+1:', " set start time to -∞"))
-    ass:append(add('Shift+2:', " set end time to ∞"))
-    ass:append(add('r:', " retime"))
+    local k = self.keybinds
+    ass:append(add(k[1][1], "set start time "..paren(st)))
+    ass:append(add(k[2][1], "set end time "..paren(et)))
+    ass:append(add(k[3][1], "cycle mode"))
+    ass:append(add(k[4][1], "toggle save to new file "..paren(yesno(self.save_to_new_file))))
+    ass:append(add(k[5][1], "set start time to -∞"))
+    ass:append(add(k[6][1], "set end time to ∞"))
+    ass:append(add(k[7][1], "retime"))
     ass:append("\\N")
-    ass:append(add('ESC:', " close"))
+    ass:append(add(k[8][1], "close"))
 
     local w, h = mp.get_osd_size()
     mp.set_osd_ass(w, h, ass.text)
