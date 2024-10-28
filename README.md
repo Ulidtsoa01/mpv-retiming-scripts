@@ -1,8 +1,8 @@
 # mpv retiming scripts
 
-### snap-to-secondary-sub
+Scripts related to retiming subtitle files. Keybinds can be rebound near the top of each file. Each script can be installed by placing the respective file into your [mpv scripts folder](https://mpv.io/manual/master/#files).
 
-NOTE: Different subtitle tracks don't always begin or end in the same places. It is suggested to keep the secondary sub visible while retiming with this script.
+### snap-to-secondary-sub
 
 Adds keybinds to make it easier to retime subs to match the timing of the internal subs in a video file:
 
@@ -11,9 +11,20 @@ Adds keybinds to make it easier to retime subs to match the timing of the intern
 - `Alt+RIGHT`: Execute `sub-step 1` (CTRL+SHIFT+RIGHT), then execute what `Alt+c` does.
 - `e`: Swap primary subtitle and secondary subtitle with each other.
 
+NOTE: Different subtitle tracks don't always begin or end in the same places. It is suggested to keep the secondary sub visible while retiming with this script.
+
+### save-sub-delay-to-file
+
+Script for retiming .srt files by using the sub delay as the offset to shift the subtitle timings by. Press `w` to bring up a menu. You can configure the script's defaults by changing the `options` near the beginning of the script.
+
+Setup:
+
+1. This script depends on sub-tools, which can be downloaded [here](https://github.com/Rapptz/sub-tools)
+2. In the `options`, set `sub_tools_path` to the location of your sub-tools executable.
+
 ### Reccomended mpv settings
 
-To take full advantage of this script, the following settings and keybinds are helpful.
+To take full advantage of these scripts, the following settings and keybinds are helpful.
 In `mpv.conf`:
 
 ```
