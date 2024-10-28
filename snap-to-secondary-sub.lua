@@ -1,14 +1,17 @@
-SNAP_KEY = 'alt+c'
-SNAP_LEFT_KEY = 'alt+LEFT'
-SNAP_RIGHT_KEY = 'alt+RIGHT'
-SWAP_KEY = 'alt+u'
+SNAP_KEY = 'Alt+c'
+SNAP_LEFT_KEY = 'Alt+LEFT'
+SNAP_RIGHT_KEY = 'Alt+RIGHT'
+SWAP_KEY = 'Alt+u'
+
+FONT_SIZE = nil --'{\\fs16}'
 
 local mp = require 'mp'
 
 local function showMessage(message, persist)
   local ass_start = mp.get_property_osd('osd-ass-cc/0')
   local ass_stop = mp.get_property_osd('osd-ass-cc/1')
-  mp.osd_message(ass_start..'{\\fs16}'..message..ass_stop, persist and 999 or 2);
+  local fontsize = FONT_SIZE or ''
+  mp.osd_message(ass_start..fontsize..message..ass_stop, persist and 999 or 2);
 end
 
 local function snapSubToSecondarySub()
@@ -44,8 +47,8 @@ local function format_track_switch_message(id , lang, title)
 end
 
 local function swapSubWithSecondarySub()
-  local sub_selected = mp.get_property("current-tracks/sub/selected")
-  local sub2_selected = mp.get_property("current-tracks/sub2/selected")
+  local sub_selected = mp.get_property_native("current-tracks/sub/selected")
+  local sub2_selected = mp.get_property_native("current-tracks/sub2/selected")
   local sub_id = mp.get_property_number("current-tracks/sub/id") or ""
   local sub2_id = mp.get_property_number("current-tracks/sub2/id") or ""
   local sub_lang = mp.get_property("current-tracks/sub/lang") or "unknown"
@@ -60,14 +63,14 @@ local function swapSubWithSecondarySub()
     mp.set_property("sid", "no")
     mp.set_property("secondary-sid", sub_id)
     sub_swapped = true
-    message2 = "Secondary subtitles: "..format_track_switch_message(sub_id, sub_lang, sub_title)
+    message1 = "Secondary subtitles: "..format_track_switch_message(sub_id, sub_lang, sub_title)
   end
   if sub2_selected then
     if not sub_swapped then
       mp.set_property("secondary-sid", "no")
     end
     mp.set_property("sid", sub2_id)
-    message1 = "Subtitles: "..format_track_switch_message(sub2_id, sub2_lang, sub2_title)
+    message2 = "Subtitles: "..format_track_switch_message(sub2_id, sub2_lang, sub2_title)
   end
   showMessage(message1..message2)
 end
