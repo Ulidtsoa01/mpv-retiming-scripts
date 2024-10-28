@@ -9,7 +9,7 @@ Adds keybinds to make it easier to retime subs to match the timing of the intern
 - `Alt+c`: Set the sub-delay so the start time of the primary subtitle matches the start time of the secondary subtitle.
 - `Alt+LEFT`: Execute `sub-step -1` (CTRL+SHIFT+LEFT), then execute what `Alt+c` does.
 - `Alt+RIGHT`: Execute `sub-step 1` (CTRL+SHIFT+RIGHT), then execute what `Alt+c` does.
-- `Alt+u`: Swap primary subtitle and secondary subtitle with each other.
+- `e`: Swap primary subtitle and secondary subtitle with each other.
 
 ### Reccomended mpv settings
 
