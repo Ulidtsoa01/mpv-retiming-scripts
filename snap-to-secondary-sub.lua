@@ -1,7 +1,7 @@
 SNAP_KEY = 'Alt+c'
 SNAP_LEFT_KEY = 'Alt+LEFT'
 SNAP_RIGHT_KEY = 'Alt+RIGHT'
-SWAP_KEY = 'Alt+u'
+SWAP_SUB_AND_SUB2_KEY = 'Alt+u'
 
 FONT_SIZE = nil --'{\\fs16}'
 
@@ -78,4 +78,4 @@ end
 mp.add_key_binding(SNAP_KEY, 'sub-to-sec-sub', snapSubToSecondarySub);
 mp.add_key_binding(SNAP_LEFT_KEY, 'left-sub-to-sec-sub', snapLeftSubToSecondarySub);
 mp.add_key_binding(SNAP_RIGHT_KEY, 'right-sub-to-sec-sub', snapRightSubToSecondarySub);
-mp.add_key_binding(SWAP_KEY, 'swap-sub-with-sec-sub', swapSubWithSecondarySub);
+mp.add_key_binding(SWAP_SUB_AND_SUB2_KEY, 'swap-sub-with-sec-sub', swapSubWithSecondarySub);
