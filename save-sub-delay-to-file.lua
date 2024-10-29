@@ -365,9 +365,20 @@ mp.observe_property("sub-delay", "native", function()
     end
 end)
 
+local max_id = 0
+
+mp.observe_property("current-tracks/sub/id", "native", function()
+    local curr_id = mp.get_property_native("current-tracks/sub/id") or 0
+    if curr_id > max_id then
+        max_id = curr_id
+        current_window.orig_file_path = nil
+        current_window.target_file_path = nil
+        current_window.current_file_path = nil
+    end
+end)
+
 mp.register_event("file-loaded", function()
     current_window.orig_file_path = nil
     current_window.target_file_path = nil
     current_window.current_file_path = nil
 end)
-
