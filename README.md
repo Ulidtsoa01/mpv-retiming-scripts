@@ -26,6 +26,9 @@ Setup:
 
 Thanks goes to [Rapptz](https://github.com/Rapptz) for help with testing.
 
+![save-sub-delay-to-file](https://github.com/user-attachments/assets/97e3e331-a76a-4df7-8c84-7e4e87f6840a)
+
+
 ### Reccomended mpv settings
 
 To take full advantage of these scripts, the following settings and keybinds are helpful.
