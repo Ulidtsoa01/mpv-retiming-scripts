@@ -15,12 +15,16 @@ NOTE: Different subtitle tracks don't always begin or end in the same places. It
 
 ### save-sub-delay-to-file
 
-Script for retiming .srt files by using the sub delay as the offset to shift the subtitle timings by. Press `w` to bring up a menu. You can configure the script's defaults by changing the `options` near the beginning of the script.
+Script for retiming .ass and .srt **files** by using the sub delay as the offset to shift the subtitle timings by. Upon execution, basic-sub-utility reads the current subtitle file and the resulting output is loaded into mpv.
+
+Press `w` to bring up a menu. You can configure the script's defaults by changing the `options` near the beginning of the script.
 
 Setup:
 
-1. This script depends on sub-tools, which can be downloaded [here](https://github.com/Rapptz/sub-tools)
-2. In the `options`, set `sub_tools_path` to the location of your sub-tools executable.
+1. This script depends on basic-sub-utility, which can be downloaded [here](https://github.com/Ulidtsoa01/basic-sub-utility/releases).
+2. In the `options`, set `tool_path` to the location of your basic-sub-utility executable.
+
+Thanks goes to [Rapptz](https://github.com/Rapptz) for help with testing.
 
 ### Reccomended mpv settings
 

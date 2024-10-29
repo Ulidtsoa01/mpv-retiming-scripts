@@ -9,8 +9,9 @@ retiming_window.__index = retiming_window
 function retiming_window:new()
     local options
     options = {
-        sub_tools_path = [[C:\<path>\sub-tools.exe]], --SETUP: replace with path to sub-tools (https://github.com/Rapptz/sub-tools)
-        save_to_new_file = true, --If true, outputted sub file is named according to rename_filename applied to the name of the currently playing video
+        tool_path = [[C:\<path>\basic-sub-utility.exe]], --SETUP: replace with path to basic-sub-utility (https://github.com/Ulidtsoa01/basic-sub-utility/releases)
+        save_to_new_file = true, --If true, outputted sub file is renamed to the currently playing video (along with any replacements specified by rename_filename)
+        preserve_original_file = false, --If true, will not replace the original/first subtitle file executed on
         rename_filename = {"(.*)", "%1.ja", 1}, --string.gsub() params: provide a pattern, replacement string, and limit for number of substitutions
             --read https://www.lua.org/manual/5.3/manual.html#6.4.1 for pattern-matching
         keybinds = {
@@ -20,11 +21,10 @@ function retiming_window:new()
             {'s', 'toggle-save-new-file', function() options:toggle_new_file() end, {}},
             {'!', 'earliest-start-time', function() options:set_start("-∞") end, {}},
             {'@', 'latest-end-time', function() options:set_end("∞") end, {}},
-            {'r', 'retime', function() options:retime() end, {}},
-            {'ESC', 'escape', function() options:unbind() end, {}},
+            {'r', 'execute', function() options:execute() end, {}},
         },
         padding_x = 20,
-        padding_y = 30,
+        padding_y = 90,
     }
     retiming_window.displayed = false
     retiming_window.start_time = "-∞"
@@ -55,8 +55,22 @@ local function testMessage(t)
     else
         message = tostring(t)
     end
-    showMessage(message, 20)
+    showMessage(message, 5)
 end
+
+
+local function bold(text)
+    return "{\\b1}" .. tostring(text) .. "{\\b0}"
+end
+
+local function paren(text)
+    return "(" .. tostring(text) .. ")"
+end
+
+local function yesno(text)
+    return text and "yes" or "no"
+end
+
 
 local function format_duration_HHMMSSssss(duration)
     if duration == nil then return "00:00" end
@@ -96,6 +110,17 @@ local function path(abs_path)
     return {dir=directory, filename=filename, name=name, ext=extension}
 end
 
+
+local function copy(src, target)
+    local infile = io.open(src, "r")
+    local instr = infile:read("*a")
+    infile:close()
+
+    local outfile = io.open(target, "w")
+    outfile:write(instr)
+    outfile:close()
+end
+
 local function file_exists(name)
     local f = io.open(name, "r")
     return f ~= nil and io.close(f)
@@ -110,8 +135,7 @@ function retiming_window:handle_file_names()
         return
     end
     if self.save_to_new_file then
-        local video_file = path(mp.get_property('path')) --should this be stream-open-filename?
-        local new_name = video_file["name"]
+        local new_name = mp.get_property('filename/no-ext')
         local r = self.rename_filename
         new_name = string.gsub(new_name, r[1], r[2], r[3])
         local orig = path(self.orig_file_path)
@@ -119,29 +143,33 @@ function retiming_window:handle_file_names()
     else
         self.target_file_path = self.orig_file_path
     end
-
-
+    if self.preserve_original_file and self.target_file_path == self.orig_file_path then
+        local orig = path(self.orig_file_path)
+        self.target_file_path = orig['dir']..orig['name'].." (1)."..orig['ext']
+    end
 end
 
 function retiming_window:after_call(result)
     local message = ""
     if file_exists(self.target_file_path) then
         os.remove(self.target_file_path)
-        message = "✔Existing file replaced. Retimed sub saved to "..self.target_file_path
+        message = "✔Existing file replaced. Edited sub saved to "..self.target_file_path
     else
-        message = "✔Retimed sub saved to "..self.target_file_path
+        message = "Edited sub saved to "..self.target_file_path
     end
     local curr = path(self.current_file_path)
-    local sub_tools_output = curr['dir']..curr['name'].."_modified".."."..curr['ext']
-    os.rename(sub_tools_output, self.target_file_path)
+    local program_output = curr['dir']..curr['name'].."_modified".."."..curr['ext']
+    os.rename(program_output, self.target_file_path)
     showMessage(message, 5)
     mp.set_property("sub-delay", 0)
+    self:set_start("-∞")
+    self:set_end("∞")
     mp.commandv("sub-remove", self.drop_index)
     mp.commandv("sub-add", self.target_file_path)
     self.current_file_path = self.target_file_path
 end
 
-function retiming_window:retime()
+function retiming_window:execute()
     local sub_selected = mp.get_property_native("current-tracks/sub/selected")
     local track_external = mp.get_property_native("current-tracks/sub/external")
     local track_codec = mp.get_property("current-tracks/sub/codec")
@@ -156,37 +184,48 @@ function retiming_window:retime()
         showMessage("✘Track must be external")
         return
     end
-    if track_codec ~= "subrip" then
+    if not (track_codec == "subrip" or track_codec == "ass") then
         self:unbind()
-        showMessage("✘Track must be .srt ("..track_codec..")")
+        showMessage("✘Track must be .srt or .ass ("..track_codec..")")
         return
     end
-    local delay = mp.get_property_native("sub-delay")
-    if delay == 0 then
-        self:unbind()
-        showMessage("✘Delay is 0")
-        return
-    end
-
-
+    
     self:handle_file_names()
-
     self.drop_index = mp.get_property_number("current-tracks/sub/id")
-
-
-
     local args = {
-        self.sub_tools_path,
+        self.tool_path,
         self.current_file_path,
-        "--shift", string.format("%.4f", delay),
     }
-    if self.start_time ~= "-∞" then
-        args[#args+1] = "--start"
-        args[#args+1] = format_duration_HHMMSSssss(self.start_time)
-    end
-    if self.end_time ~= "∞" then
-        args[#args+1] = "--end"
-        args[#args+1] = format_duration_HHMMSSssss(self.end_time)
+    if self.mode == 1 then
+        local delay = mp.get_property_native("sub-delay")
+        if delay == 0 then
+            self:unbind()
+            showMessage("✘Delay is 0")
+            return
+        end
+        args[#args+1] = "--shift"
+        args[#args+1] = string.format("%.4f", delay)
+        if self.start_time ~= "-∞" then
+            args[#args+1] = "--start"
+            args[#args+1] = format_duration_HHMMSSssss(self.start_time)
+        end
+        if self.end_time ~= "∞" then
+            args[#args+1] = "--end"
+            args[#args+1] = format_duration_HHMMSSssss(self.end_time)
+        end
+    elseif self.mode == 2 then
+        if self.start_time == "-∞" and self.end_time == "∞" then
+            self:unbind()
+            showMessage("✘Remove mode needs either a start or end time to be set")
+        end
+        if self.start_time ~= "-∞" then
+            args[#args+1] = "--remove_start"
+            args[#args+1] = format_duration_HHMMSSssss(self.start_time)
+        end
+        if self.end_time ~= "∞" then
+            args[#args+1] = "--remove_end"
+            args[#args+1] = format_duration_HHMMSSssss(self.end_time)
+        end
     end
 
     mp.command_native_async({
@@ -196,17 +235,14 @@ function retiming_window:retime()
         capture_stdout = true,
     }, function(success, result, error)
         if success then
-            -- self:after_call(result)
+            self:after_call(result)
         else
-            showMessage("✘Failed to run sub-tools\\N"..error)
+            showMessage("✘Failed to run basic-sub-utility\\N"..error)
         end
     end
     )
 
-    self:unbind()
-    testMessage(args)
-    showMessage("Retiming...")
-
+    showMessage("Processing...")
 end
 
 function retiming_window:set_sub_start()
@@ -260,22 +296,10 @@ function retiming_window:format_header_string(str)
 end
 
 function retiming_window:get_header_text()
-    local header_style = [[{\q2\fs40\c&00ccff&}]]
+    local header_style = [[{\q1\c&00ccff&}]]
     local text = "Mode: %mode% [Delay: %delay%]"
     local str = header_style..self:format_header_string(text)
     return str
-end
-
-local function bold(text)
-    return "{\\b1}" .. tostring(text) .. "{\\b0}"
-end
-
-local function paren(text)
-    return "(" .. tostring(text) .. ")"
-end
-
-local function yesno(text)
-    return text and "yes" or "no"
 end
 
 function retiming_window:draw()
@@ -304,9 +328,9 @@ function retiming_window:draw()
     ass:append(add(k[4][1], "toggle save to new file "..paren(yesno(self.save_to_new_file))))
     ass:append(add(k[5][1], "set start time to -∞"))
     ass:append(add(k[6][1], "set end time to ∞"))
-    ass:append(add(k[7][1], "retime"))
+    ass:append(add(k[7][1], mode_map[self.mode][1]))
     ass:append("\\N")
-    ass:append(add(k[8][1], "close"))
+    ass:append(add(SHOW_WINDOW_KEY, "close"))
 
     local w, h = mp.get_osd_size()
     mp.set_osd_ass(w, h, ass.text)
@@ -340,8 +364,10 @@ mp.observe_property("sub-delay", "native", function()
         current_window:draw()
     end
 end)
-mp.observe_property("path", "native", function()
+
+mp.register_event("file-loaded", function()
     current_window.orig_file_path = nil
     current_window.target_file_path = nil
     current_window.current_file_path = nil
 end)
+
