@@ -149,7 +149,7 @@ function retiming_window:handle_file_names()
     end
 end
 
-function retiming_window:after_call(result)
+function retiming_window:after_call()
     local message = ""
     if file_exists(self.target_file_path) then
         os.remove(self.target_file_path)
@@ -227,22 +227,19 @@ function retiming_window:execute()
             args[#args+1] = format_duration_HHMMSSssss(self.end_time)
         end
     end
-
-    mp.command_native_async({
+    
+    showMessage("Processing...")
+    local r = mp.command_native({
         name = "subprocess",
         playback_only = false,
         args = args,
         capture_stdout = true,
-    }, function(success, result, error)
-        if success then
-            self:after_call(result)
-        else
-            showMessage("✘Failed to run basic-sub-utility\\N"..error)
-        end
+    })
+    if r.status == 0 then
+        self:after_call()
+    else
+        showMessage("✘Failed to run basic-sub-utility: "..r.status)
     end
-    )
-
-    showMessage("Processing...")
 end
 
 function retiming_window:set_sub_start()
