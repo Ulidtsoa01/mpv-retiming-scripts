@@ -15,11 +15,9 @@ local function showMessage(message, persist)
 end
 
 local function snapSubToSecondarySub()
-  local sub_selected = mp.get_property("current-tracks/sub/selected")
-  local secondary_sub_selected = mp.get_property("current-tracks/sub2/selected")
-  if sub_selected and secondary_sub_selected then
-    local subStart = mp.get_property_native('sub-start');
-    local secondarySubStart = mp.get_property_native('secondary-sub-start');
+  local subStart = mp.get_property_native('sub-start');
+  local secondarySubStart = mp.get_property_native('secondary-sub-start');
+  if subStart and secondarySubStart then
     local diff = secondarySubStart - subStart;
     mp.set_property('sub-delay', diff);
     local message = 'Sub delay: '..math.floor(diff*1000+.5)..'ms';
