@@ -9,7 +9,9 @@ Adds keybinds to make it easier to retime subs to match the timing of the intern
 - `Alt+c`: Set the sub-delay so the start time of the primary subtitle matches the start time of the secondary subtitle.
 - `Alt+LEFT`: Execute `sub-step -1` (CTRL+SHIFT+LEFT), then execute what `Alt+c` does.
 - `Alt+RIGHT`: Execute `sub-step 1` (CTRL+SHIFT+RIGHT), then execute what `Alt+c` does.
-- `e`: Swap primary subtitle and secondary subtitle with each other.
+- `e`: Swap primary sub and secondary sub.
+- `E`: Swap primary sub delay and secondary sub delay.
+- `Alt+e`: Swap primary sub and secondary sub along with their delays.
 
 NOTE: Different subtitle tracks don't always begin or end in the same places. It is suggested to keep the secondary sub visible while retiming with this script.
 
