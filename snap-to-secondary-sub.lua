@@ -2,10 +2,13 @@ SNAP_KEY = 'Alt+c'
 SNAP_LEFT_KEY = 'Alt+LEFT'
 SNAP_RIGHT_KEY = 'Alt+RIGHT'
 SWAP_SUB_AND_SUB2_KEY = 'e'
+SWAP_SUB_DELAY_AND_SUB2_DELAY_KEY = 'E'
+SWAP_SUB_AND_SUB2_DELAY_INCLUDED = 'Alt+e'
 
 FONT_SIZE = nil --'{\\fs16}'
 
 local mp = require 'mp'
+local stored_message = ''
 
 local function showMessage(message, persist)
   local ass_start = mp.get_property_osd('osd-ass-cc/0')
@@ -25,6 +28,7 @@ local function snapSubToSecondarySub()
   else
     local sub_delay = mp.get_property_native('sub-delay')
     showMessage('Sub delay: '..math.floor(sub_delay*1000+.5)..'ms\\N✘No sub or secondary sub selected');
+    -- 'Secondary sub delay: '
   end
 end
 
@@ -39,12 +43,12 @@ local function snapRightSubToSecondarySub()
 end
 
 local function format_track_switch_message(id , lang, title)
-  local text = '(%id%) %lang% ("%title%")\\N'
+  local text = '(%id%) %lang% ("%title%")'
   text = text:gsub('%%(%a+)%%', { id = id, lang = lang, title = title})
   return text
 end
 
-local function swapSubWithSecondarySub()
+local function swapSubWithSecondarySub(show_osd)
   local sub_selected = mp.get_property_native("current-tracks/sub/selected")
   local sub2_selected = mp.get_property_native("current-tracks/sub2/selected")
   local sub_id = mp.get_property_number("current-tracks/sub/id") or ""
@@ -70,10 +74,44 @@ local function swapSubWithSecondarySub()
     mp.set_property("sid", sub2_id)
     message2 = "Subtitles: "..format_track_switch_message(sub2_id, sub2_lang, sub2_title)
   end
-  showMessage(message1..message2)
+  local message = message1.."\\N"..message2
+  if show_osd then
+    showMessage(message)
+  else
+    stored_message = stored_message..message.."\\N";
+  end
+end
+
+local function swapSubDelayWithSecondarySubDelay(show_osd)
+  local sub_delay = mp.get_property_native('sub-delay');
+  local sub2_delay = mp.get_property_native('secondary-sub-delay');
+  local message1 = 'Sub delay: '..math.floor(sub_delay*1000+.5)..'ms';
+  local message2 = 'Secondary sub delay: '..math.floor(sub2_delay*1000+.5)..'ms';
+
+  mp.set_property('sub-delay', sub2_delay);
+  mp.set_property('secondary-sub-delay', sub_delay);
+  local message = message1.."\\N"..message2
+  if show_osd then
+    showMessage(message)
+  else
+    stored_message = stored_message..message.."\\N";
+  end
+end
+
+local function swapSubDelayWithSecondarySubDelayIncluded()
+  stored_message = ''
+  swapSubWithSecondarySub(false);
+  swapSubDelayWithSecondarySubDelay(false)
+  showMessage(stored_message)
 end
 
 mp.add_key_binding(SNAP_KEY, 'sub-to-sec-sub', snapSubToSecondarySub);
 mp.add_key_binding(SNAP_LEFT_KEY, 'left-sub-to-sec-sub', snapLeftSubToSecondarySub, {repeatable = true});
 mp.add_key_binding(SNAP_RIGHT_KEY, 'right-sub-to-sec-sub', snapRightSubToSecondarySub, {repeatable = true});
-mp.add_key_binding(SWAP_SUB_AND_SUB2_KEY, 'swap-sub-with-sec-sub', swapSubWithSecondarySub);
+mp.add_key_binding(SWAP_SUB_AND_SUB2_KEY, 'swap-sub-with-sec-sub', function()
+  swapSubWithSecondarySub(true)
+end);
+mp.add_key_binding(SWAP_SUB_DELAY_AND_SUB2_DELAY_KEY, 'swap-sub-delay-with-sec-sub-delay', function()
+  swapSubDelayWithSecondarySubDelay(true)
+end);
+mp.add_key_binding(SWAP_SUB_AND_SUB2_DELAY_INCLUDED, 'swap-sub-with-sec-sub-delay-included', swapSubDelayWithSecondarySubDelayIncluded);
