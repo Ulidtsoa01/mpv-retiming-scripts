@@ -9,9 +9,9 @@ retiming_window.__index = retiming_window
 function retiming_window:new()
     local options
     options = {
-        tool_path = [[C:\<path>\basic-sub-utility.exe]], --SETUP: replace with path to basic-sub-utility (https://github.com/Ulidtsoa01/basic-sub-utility/releases)
+        tool_path = [[C:\<insert path>\sub-tools.exe]], --SETUP: replace with path to sub-tools (https://github.com/Rapptz/sub-tools/releases)
+        preserve_original_file = true, --If true, will not replace the original/first subtitle file executed on
         save_to_new_file = true, --If true, outputted sub file is renamed to the currently playing video (along with any replacements specified by rename_filename)
-        preserve_original_file = false, --If true, will not replace the original/first subtitle file executed on
         rename_filename = {"(.*)", "%1.ja", 1}, --string.gsub() params: provide a pattern, replacement string, and limit for number of substitutions
             --read https://www.lua.org/manual/5.3/manual.html#6.4.1 for pattern-matching
         keybinds = {
@@ -37,7 +37,7 @@ function retiming_window:new()
     return setmetatable(options, retiming_window)
 end
 
-local mode_map = {{"retime", "Shift by sub delay"}, {"remove", "Remove selected lines"}}
+local mode_map = {{"retime", "Shift by sub delay"}, {"remove", "Remove selected lines"}, {'fix-jp', "Fix common issues"}}
 
 local function showMessage(message, persist)
     local ass_start = mp.get_property_osd('osd-ass-cc/0')
@@ -150,16 +150,7 @@ function retiming_window:handle_file_names()
 end
 
 function retiming_window:after_call()
-    local message = ""
-    if file_exists(self.target_file_path) then
-        os.remove(self.target_file_path)
-        message = "✔Existing file replaced. Edited sub saved to "..self.target_file_path
-    else
-        message = "Edited sub saved to "..self.target_file_path
-    end
-    local curr = path(self.current_file_path)
-    local program_output = curr['dir']..curr['name'].."_modified".."."..curr['ext']
-    os.rename(program_output, self.target_file_path)
+    local message = "Edited sub saved to "..self.target_file_path
     showMessage(message, 5)
     mp.set_property("sub-delay", 0)
     self:set_start("-∞")
@@ -194,7 +185,6 @@ function retiming_window:execute()
     self.drop_index = mp.get_property_number("current-tracks/sub/id")
     local args = {
         self.tool_path,
-        self.current_file_path,
     }
     if self.mode == 1 then
         local delay = mp.get_property_native("sub-delay")
@@ -203,30 +193,36 @@ function retiming_window:execute()
             showMessage("✘Delay is 0")
             return
         end
-        args[#args+1] = "--shift"
+        args[#args+1] = "shift"
+        args[#args+1] = "--by"
         args[#args+1] = string.format("%.4f", delay)
-        if self.start_time ~= "-∞" then
-            args[#args+1] = "--start"
-            args[#args+1] = format_duration_HHMMSSssss(self.start_time)
-        end
-        if self.end_time ~= "∞" then
-            args[#args+1] = "--end"
-            args[#args+1] = format_duration_HHMMSSssss(self.end_time)
-        end
     elseif self.mode == 2 then
+        args[#args+1] = "cleanup"
+        args[#args+1] = "--remove"
         if self.start_time == "-∞" and self.end_time == "∞" then
             self:unbind()
             showMessage("✘Remove mode needs either a start or end time to be set")
         end
-        if self.start_time ~= "-∞" then
-            args[#args+1] = "--remove_start"
-            args[#args+1] = format_duration_HHMMSSssss(self.start_time)
-        end
-        if self.end_time ~= "∞" then
-            args[#args+1] = "--remove_end"
-            args[#args+1] = format_duration_HHMMSSssss(self.end_time)
-        end
+    elseif self.mode == 3 then
+        args[#args+1] = "cleanup"
+        args[#args+1] = "--fix-jp"
     end
+    
+    if self.start_time ~= "-∞" then
+        args[#args+1] = "--start"
+        args[#args+1] = format_duration_HHMMSSssss(self.start_time)
+    end
+    if self.end_time ~= "∞" then
+        args[#args+1] = "--end"
+        args[#args+1] = format_duration_HHMMSSssss(self.end_time)
+    end
+    if self.current_file_path == self.target_file_path then
+        args[#args+1] = "--in-place"
+    else
+        args[#args+1] = "--output"
+        args[#args+1] = self.target_file_path
+    end
+    args[#args+1] = self.current_file_path
     
     showMessage("Processing...")
     local r = mp.command_native({
@@ -238,7 +234,7 @@ function retiming_window:execute()
     if r.status == 0 then
         self:after_call()
     else
-        showMessage("✘Failed to run basic-sub-utility: "..r.status)
+        showMessage("✘Failed to run basic-sub-utility\\N"..r.status)
     end
 end
 
