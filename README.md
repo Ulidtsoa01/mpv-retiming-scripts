@@ -17,14 +17,19 @@ NOTE: Different subtitle tracks don't always begin or end in the same places. It
 
 ### save-sub-delay-to-file
 
-Script for retiming .ass and .srt **files** by using the sub delay as the offset to shift the subtitle timings by. Upon execution, basic-sub-utility reads the current subtitle file and outputs a file, which is loaded into mpv.
+Provides a few utilities for modifying .ass and .srt **files** within mpv. The retiming mode shifts the subtitle timings by the amount of the current sub delay. The fix-jp mode fixes common issues with Japanese sub files as listed by the the following:
+> * Removal of [外:37F6ECF37A0A3EF8DFF083CCC8754F81]-like instances of text
+> * Half-width kana is converted into full width kana
+> * Removal of &lrm;, U+202A, and U+202C characters
+
+Upon execution, sub-tools reads the current subtitle file and outputs a file, which is loaded back into mpv.
 
 Press `w` to bring up a menu. You can configure the script's defaults by changing the `options` near the beginning of the script.
 
 Setup:
 
-1. This script depends on basic-sub-utility, which can be downloaded [here](https://github.com/Ulidtsoa01/basic-sub-utility/releases).
-2. In the `options`, set `tool_path` to the location of your basic-sub-utility executable.
+1. This script depends on sub-tools, which can be downloaded [here](https://github.com/Rapptz/sub-tools/releases).
+2. In the `options`, set `tool_path` to the location of your sub-tools executable.
 
 Thanks goes to [Rapptz](https://github.com/Rapptz) for help with testing.
 
