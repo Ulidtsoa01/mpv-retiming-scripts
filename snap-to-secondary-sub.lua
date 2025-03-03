@@ -85,8 +85,8 @@ end
 local function swapSubDelayWithSecondarySubDelay(show_osd)
   local sub_delay = mp.get_property_native('sub-delay');
   local sub2_delay = mp.get_property_native('secondary-sub-delay');
-  local message1 = 'Sub delay: '..math.floor(sub_delay*1000+.5)..'ms';
-  local message2 = 'Secondary sub delay: '..math.floor(sub2_delay*1000+.5)..'ms';
+  local message1 = 'Sub delay: '..math.floor(sub2_delay*1000+.5)..'ms';
+  local message2 = 'Secondary sub delay: '..math.floor(sub_delay*1000+.5)..'ms';
 
   mp.set_property('sub-delay', sub2_delay);
   mp.set_property('secondary-sub-delay', sub_delay);
