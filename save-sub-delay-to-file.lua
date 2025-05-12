@@ -72,7 +72,7 @@ local function yesno(text)
 end
 
 
-local function format_duration_HHMMSSssss(duration)
+local function format_duration_HHMMSSsss(duration)
     if duration == nil then return "00:00" end
     local negative = ""
     if duration  <= -0.00005 then
@@ -83,8 +83,8 @@ local function format_duration_HHMMSSssss(duration)
     local hours = math.floor(duration / 3600)
     local minutes = math.floor(duration / 60 % 60)
     local seconds = math.floor(duration % 60)
-    local ssss = (duration*10000)%10000
-    return negative..string.format("%02d:%02d:%02d.%04d", hours, minutes, seconds, ssss)
+    local sss = (duration*1000)%1000
+    return negative..string.format("%02d:%02d:%02d.%03d", hours, minutes, seconds, sss)
 end
 
 
@@ -210,11 +210,11 @@ function retiming_window:execute()
     
     if self.start_time ~= "-∞" then
         args[#args+1] = "--start"
-        args[#args+1] = format_duration_HHMMSSssss(self.start_time)
+        args[#args+1] = format_duration_HHMMSSsss(self.start_time)
     end
     if self.end_time ~= "∞" then
         args[#args+1] = "--end"
-        args[#args+1] = format_duration_HHMMSSssss(self.end_time)
+        args[#args+1] = format_duration_HHMMSSsss(self.end_time)
     end
     if self.current_file_path == self.target_file_path then
         args[#args+1] = "--in-place"
@@ -234,16 +234,16 @@ function retiming_window:execute()
     if r.status == 0 then
         self:after_call()
     else
-        showMessage("✘Failed to run basic-sub-utility\\N"..r.status)
+        showMessage("✘Failed to run sub-tools\\N"..r.status)
     end
 end
 
 function retiming_window:set_sub_start()
     local sub_start = mp.get_property_native('sub-start')
     if sub_start then
-        self.start_time = sub_start - 0.002
+        self.start_time = sub_start - 0.001
     else
-        self.start_time = mp.get_property_native('time-pos')
+        self.start_time = mp.get_property_native('time-pos') - mp.get_property_native("sub-delay")
     end
     self:draw()
 end
@@ -251,9 +251,9 @@ end
 function retiming_window:set_sub_end()
     local sub_end = mp.get_property_native('sub-end')
     if sub_end then
-        self.end_time = sub_end + 0.002
+        self.end_time = sub_end + 0.001
     else
-        self.end_time = mp.get_property_native('time-pos')
+        self.end_time = mp.get_property_native('time-pos') - mp.get_property_native("sub-delay")
     end
     self:draw()
 end
