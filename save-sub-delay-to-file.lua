@@ -241,7 +241,7 @@ end
 function retiming_window:set_sub_start()
     local sub_start = mp.get_property_native('sub-start')
     if sub_start then
-        self.start_time = sub_start - 0.0001
+        self.start_time = sub_start - 0.002
     else
         self.start_time = mp.get_property_native('time-pos')
     end
@@ -251,7 +251,7 @@ end
 function retiming_window:set_sub_end()
     local sub_end = mp.get_property_native('sub-end')
     if sub_end then
-        self.end_time = sub_end + 0.0001
+        self.end_time = sub_end + 0.002
     else
         self.end_time = mp.get_property_native('time-pos')
     end
